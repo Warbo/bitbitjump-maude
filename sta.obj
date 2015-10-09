@@ -1,0 +1,254 @@
+***	Copyright (c) 2006, Matt Webster (matt@csc.liv.ac.uk), 
+***	Department of Computer Science, 
+***	University of Liverpool.
+***	All rights reserved.
+***	
+***	Redistribution and use in source and binary forms, with or without modification, 
+***	are permitted provided that the following conditions are met:
+***	
+***	   *  Redistributions of source code must retain the above copyright notice, 
+***	      this list of conditions and the following disclaimer.
+***	   *  Redistributions in binary form must reproduce the above copyright notice, 
+***	      this list of conditions and the following disclaimer in the documentation 
+***	      and/or other materials provided with the distribution.
+***	   *  Neither the name of the University of Liverpool nor the names of its 
+***	      contributors may be used to endorse or promote products derived from this 
+***	      software without specific prior written permission.
+***	
+***	THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
+***	ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED 
+***	WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. 
+***	IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, 
+***	INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, 
+***	BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, 
+***	DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF 
+***	LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE 
+***	OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF 
+***	ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+
+
+
+
+
+*** Specification of a subset of the IA-32 instruction set.
+*** Subset = {MOV, ADD, SUB, XOR, AND, OR, PUSH, POP, NOP}.
+*** By Matt Webster, June 2006. OBJ3 version 2.0 was used.
+
+*** This module specifies the 16 bitwise Boolean operations 
+*** for integers in Arabic numeral notation using built-in Lisp 
+*** operations (OBJ is built on top of GNU Common Lisp). 
+obj BITWISE is
+	protecting INT .
+
+	*** syntax of the 16 Boolean binary operations
+	op _bone_ : Int Int -> Int [prec 35] .
+	op _btwo_ : Int Int -> Int [prec 35] .
+	op _bandcone_ : Int Int -> Int [prec 35] .
+	op _bandctwo_ : Int Int -> Int [prec 35] .
+	op _band_ : Int Int -> Int [prec 35] .
+	op _bcone_ : Int Int -> Int [prec 35] .
+	op _bctwo_ : Int Int -> Int [prec 35] .
+	op _bclr_ : Int Int -> Int [prec 35] .
+	op _bxnor_ : Int Int -> Int [prec 35] .
+	op _bor_ : Int Int -> Int [prec 35] .
+	op _bnand_ : Int Int -> Int [prec 35] .
+	op _bnor_ : Int Int -> Int [prec 35] .
+	op _borcone_ : Int Int -> Int [prec 35] .
+	op _borctwo_ : Int Int -> Int [prec 35] .
+	op _bset_ : Int Int -> Int [prec 35] .
+	op _bxor_ : Int Int -> Int [prec 35] .
+
+	vars H1 H2 : Int .
+
+	*** semantics of the Boolean binary operations
+	bq H1 bone H2 = (boole boole-1 H1 H2) .
+	bq H1 btwo H2 = (boole boole-2 H1 H2) .
+	bq H1 bandcone H2 = (boole boole-andc1 H1 H2) .
+	bq H1 bandctwo H2 = (boole boole-andc2 H1 H2) .
+	bq H1 band H2 = (boole boole-and H1 H2) .
+	bq H1 bcone H2 = (boole boole-c1 H1 H2) .
+	bq H1 bctwo H2 = (boole boole-c2 H1 H2) .
+	bq H1 bclr H2 = (boole boole-clr H1 H2) .
+	bq H1 bxnor H2 = (boole boole-eqv H1 H2) .
+	bq H1 bor H2 = (boole boole-ior H1 H2) .
+	bq H1 bnand H2 = (boole boole-nand H1 H2) .	
+	bq H1 bnor H2 = (boole boole-nor H1 H2) .
+	bq H1 borcone H2 = (boole boole-orc1 H1 H2) .
+	bq H1 borctwo H2 = (boole boole-orctwo H1 H2) .
+	bq H1 bset H2 = (boole boole-set H1 H2) .
+	bq H1 bxor H2 = (boole boole-xor H1 H2) .
+endo
+
+*** This module defines the syntax of a subset of IA-32.
+obj IA-32-SYNTAX is 
+	protecting BITWISE .
+	protecting INT .
+	sorts Instruction Variable Expression Stack EInt .
+	subsorts Variable EInt < Expression .
+	subsort Int < EInt .
+	
+	*** IA-32 instructions	
+	op mov_,_ : Variable Expression -> Instruction [prec 20] .
+	op add_,_ : Variable Expression -> Instruction [prec 20] .
+	op sub_,_ : Variable Expression -> Instruction [prec 20] .
+	op nop : -> Instruction .
+	op push_ : Expression -> Instruction [prec 20] .
+	op pop_ : Variable -> Instruction [prec 20] .	
+	op and_,_ : Variable Expression -> Instruction [prec 20] .
+	op or_,_ : Variable Expression -> Instruction [prec 20] .
+	op xor_,_ : Variable Expression -> Instruction [prec 20] .
+	op test_,_ : Variable Expression -> Instruction [prec 20] .
+	*** helper operations
+	op stackPush : Expression Stack -> Stack .
+	op stackPop : Stack -> Stack .
+	op stackTop : Stack -> EInt .	
+	op _next_ : EInt Stack -> Stack [prec 15] .
+	op stackBase : -> Stack .
+	op msb : EInt -> EInt .
+	op isZero : EInt -> EInt .
+	op parity : EInt -> EInt .
+	*** error messages
+	op emptyStackError1 : -> Stack .
+	op emptyStackError2 : -> EInt .
+	*** IA-32 registers
+	ops eax ebx ecx edx ebp esp esi edi ip : -> Variable .
+	*** IA-32 EFLAGS register
+	ops cf of sf af zf pf : -> Variable .
+	*** equality operation 
+	op _is_ : EInt EInt -> Bool .
+	op _is_ : Stack Stack -> Bool .
+	*** extending the Int sort to include "undef"
+	op undef : -> EInt .
+	
+	
+	*** overloaded Boolean operations - these should be in proof scripts
+	*** but OBJ3 v.2.0 won't allow it
+	op _band_ : EInt EInt -> EInt [prec 35] .
+	op _bor_ : EInt EInt -> EInt [prec 35] .
+endo
+
+*** This module defines the semantics of the IA-32 instructions
+*** whose syntax is defined in IA-32-SYNTAX.
+obj IA-32-SEMANTICS is
+	protecting IA-32-SYNTAX .
+	sort Store .
+
+	*** stores
+	ops s : -> Store .
+	op initial : -> Store .
+
+	*** operators for defining the semantics of IA-32
+	op _[[_]] : Store Expression -> EInt [prec 30] .
+	op _[[stack]] : Store -> Stack [prec 30] .	
+	op _;_ : Store Instruction -> Store [prec 25] .
+
+	*** variables for rewriting rules
+	var S : Store .
+	vars I I1 I2 : EInt .
+	vars INT INT1 INT2 : Int .
+	vars V V1 V2 V3 : Variable .
+	vars E E1 E2 E3 : Expression .
+	vars ST ST1 ST2 : Stack .
+
+	*** _is_ semantics
+	eq I1 is I2 = (I1 == I2) .
+	eq ST1 is ST2 = (ST1 == ST2) .
+	*** the value of any integer in a store is the integer itself
+	eq S[[I]] = I .		
+	*** initial values of variables and the stack
+	eq initial[[stack]] = stackBase .
+	cq initial[[V]] = undef 
+		if V =/= ip .
+	eq initial[[ip]] = 0 .
+	
+	*** IA-32 instruction semantics	
+	eq S ; and V,E [[V]] = S[[V]] band S[[E]] .
+	cq S ; and V1,E [[V2]] = S[[V2]]
+		if V1 =/= V2 and V2 =/= ip and V2 =/= sf and V2 =/= zf 
+		and V2 =/= pf and V2 =/= cf and V2 =/= of .
+	eq S ; and V,E [[stack]] = S[[stack]] .		
+	eq S ; and V,E [[ip]] = S[[ip]] + 1 .
+	eq S ; and V,E [[sf]] = msb( S[[V]] band S[[E]] ) .
+	eq S ; and V,E [[zf]] = isZero( S[[V]] band S[[E]] ) .
+	eq S ; and V,E [[pf]] = parity( S[[V]] band S[[E]] ) .
+	eq S ; and V,E [[cf]] = 0 .
+	eq S ; and V,E [[of]] = 0 .	
+																		
+	eq S ; or V,E [[V]] = S[[V]] bor S[[E]] .
+	cq S ; or V1,E [[V2]] = S[[V2]]
+		if V1 =/= V2 and V2 =/= ip and V2 =/= sf and V2 =/= zf 
+		and V2 =/= pf and V2 =/= cf and V2 =/= of .
+	eq S ; or V,E [[stack]] = S[[stack]] .		
+	eq S ; or V,E [[ip]] = S[[ip]] + 1 .	
+	eq S ; or V,E [[sf]] = msb( S[[V]] bor S[[E]] ) .
+	eq S ; or V,E [[zf]] = isZero( S[[V]] bor S[[E]] ) .
+	eq S ; or V,E [[pf]] = parity( S[[V]] bor S[[E]] ) .
+	eq S ; or V,E [[cf]] = 0 .
+	eq S ; or V,E [[of]] = 0 .	
+
+	eq S ; xor V,E [[V]] = S[[V]] bxor S[[E]] .
+	cq S ; xor V1,E [[V2]] = S[[V2]]
+		if V1 =/= V2 and V2 =/= ip and V2 =/= sf and V2 =/= zf 
+		and V2 =/= pf and V2 =/= cf and V2 =/= of .
+	eq S ; xor V,E [[stack]] = S[[stack]] .	
+	eq S ; xor V,E [[ip]] = S[[ip]] + 1 .
+	eq S ; xor V,E [[sf]] = msb( S[[V]] bxor S[[E]] ) .
+	eq S ; xor V,E [[zf]] = isZero( S[[V]] bxor S[[E]] ) .
+	eq S ; xor V,E [[pf]] = parity( S[[V]] bxor S[[E]] ) .
+	eq S ; xor V,E [[cf]] = 0 .
+	eq S ; xor V,E [[of]] = 0 .	
+									
+	eq S ; test V,E [[V]] = S[[V]] .
+	cq S ; test V1,E [[V2]] = S[[V2]] 
+		if V2 =/= ip and V2 =/= sf and V2 =/= zf 
+		and V2 =/= pf and V2 =/= cf and V2 =/= of .
+	eq S ; test V,E [[stack]] = S[[stack]] .		
+	eq S ; test V,E [[ip]] = S[[ip]] + 1 .
+	eq S ; test V,E [[sf]] = msb( S[[V]] band S[[E]] ) .
+	eq S ; test V,E [[zf]] = isZero( S[[V]] band S[[E]] ) .
+	eq S ; test V,E [[pf]] = parity( S[[V]] band S[[E]] ) .
+	eq S ; test V,E [[cf]] = 0 .
+	eq S ; test V,E [[of]] = 0 .	
+
+	eq S ; mov V,E [[V]] = S[[E]] .
+	cq S ; mov V1,E [[V2]] = S[[V2]] 
+		if V1 =/= V2 and V2 =/= ip .
+	eq S ; mov V,E [[stack]] = S[[stack]] .
+	eq S ; mov V,E [[ip]] = S[[ip]] + 1 .
+	
+	eq S ; add V,E [[V]] = (S[[V]] + S[[E]]) band 4294967295 .
+	cq S ; add V1, E [[V2]] = S[[V2]]
+		if V1 =/= V2 and V2 =/= ip .
+	eq S ; add V,E [[stack]] = S[[stack]] .		
+	eq S ; add V,E [[ip]] = S[[ip]] + 1 .
+
+	eq S ; sub V,E [[V]] = (S[[V]] - S[[E]]) band 4294967295 .
+	cq S ; sub V1, E [[V2]] = S[[V2]]
+		if V1 =/= V2 and V2 =/= ip .
+	eq S ; sub V,E [[stack]] = S[[stack]] .		
+	eq S ; sub V,E [[ip]] = S[[ip]] + 1 .
+	
+	eq S ; push E [[stack]] = stackPush(S[[E]],S[[stack]]) .
+	cq S ; push E [[V]] = S[[V]] 
+		if V =/= ip .	
+	eq S ; push E [[ip]] = S[[ip]] + 1 .	
+
+	eq S ; pop V [[stack]] = stackPop(S[[stack]]) .
+	eq S ; pop V [[V]] = stackTop(S[[stack]]) .
+	cq S ; pop V1 [[V2]] = S[[V2]] 
+		if V1 =/= V2 and V2 =/= ip .	
+	eq S ; pop V [[ip]] = S[[ip]] + 1 .	
+	
+	cq S ; nop [[V]] = S[[V]] 
+		if V =/= ip .
+	eq S ; nop [[stack]] = S[[stack]] .
+	eq S ; nop [[ip]] = S[[ip]] + 1 .
+
+	*** Stack helper operations semantics
+	eq stackPush(I,ST) = I next ST . 
+	eq stackPop(I next ST) = ST .
+	eq stackPop(stackBase) = emptyStackError1 .
+	eq stackTop(I next ST) = I .
+	eq stackTop(stackBase) = emptyStackError2 .	
+endo
